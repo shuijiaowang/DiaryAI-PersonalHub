@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: diaryai-postgres
+    environment:
+      POSTGRES_USER: diary
+      POSTGRES_PASSWORD: diary
+      POSTGRES_DB: diary
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U diary -d diary"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: diaryai-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: diaryai-api
+    env_file:
+      - ./server/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: diaryai-worker
+    env_file:
+      - ./server/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+    command: ["celery", "-A", "app.tasks.celery_app:celery_app", "worker", "-l", "info"]
+    profiles:
+      - worker  # opt-in: `docker compose --profile worker up`
+
+  web:
+    image: node:20-alpine
+    container_name: diaryai-web
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web:/app
+    command: sh -c "corepack enable && pnpm install && pnpm dev --host 0.0.0.0"
+
+volumes:
+  pgdata:

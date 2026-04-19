@@ -1,0 +1,50 @@
+---
+description: DiaryAI-PersonalHub project rules - hard constraints for AI when modifying this codebase
+alwaysApply: true
+---
+
+# DiaryAI-PersonalHub · 工程硬约束（来自设计文档 §8）
+
+任何对本仓库的代码改动都必须严格遵守以下规则。违反任意一条都视为缺陷。
+
+## LLM / AI
+
+1. **任何 LLM 调用必须经过 `server/app/ai/providers/base.py` 的 `LLMProvider` 抽象。**
+   禁止在业务代码（services / api / modules / tasks）里直接 `import openai` 或自行 HTTP 调用模型。
+   新增模型 = 新增一个 `LLMProvider` 子类 + 在 `providers/registry.py` 注册。
+
+2. **任何 AI 输出必须经过 Pydantic 校验后才能进数据库。**
+   入口已在 `app/ai/pipelines/diary_parser.py`：解析失败必须重试（默认 3 次）并把上轮错误回灌给模型，而不是直接吞错。
+
+3. **每次 LLM 调用必须落审计表 `ai_call_log`。** 走 `app/ai/audit.py`。
+
+4. **同 prompt + 同 model 的结果必须可缓存**（`app/ai/cache.py`）。新增 prompt 流程时遵循同一缓存模式。
+
+## 模块（business modules）
+
+5. **加新模块 = 在 `server/app/modules/<code>/` 下新增子类 + `@register`。**
+   不允许在 `action_executor.py / diary_parser.py` 等主流程里写 `if module_code == "xxx"` 的硬编码分支。
+
+6. 每个模块必须提供：`code / name / DataSchema / prompt_fragment / actions`，可选实现 `apply_action`（仅当 `actions` 非空）。
+
+## 数据库 / 服务分层
+
+7. **API 路由（`api/v1/*`）只做入参校验和调用 Service。** 不允许在路由里直接写 SQL 或操作 ORM 对象。
+
+8. **数据库写操作（add/commit/delete/flush）必须在 Service 层。** Repository 层只负责数据访问，不写业务逻辑。
+
+9. 新加的表必须经 Alembic 迁移生成；不允许手写 DDL 或在运行时 `Base.metadata.create_all`。
+
+10. 时间字段统一 `DateTime(timezone=True)`，业务里全程 UTC，前端展示时再转本地时区。
+
+## 配置 / 安全
+
+11. **API Key、密码、密钥**只能从环境变量读，必须经过 `app/core/config.py:Settings`。
+    禁止源码里出现任何明文 secret，禁止把 `.env` 提交进 git。
+
+12. 路由必须使用 `app.api.deps.get_current_user` 进行鉴权，所有数据查询必须按 `user_id` 隔离。
+
+## 测试
+
+13. 加新模块至少补一条最小用例到 `server/tests/test_modules.py`（或对应模块自己的测试文件）。
+14. 涉及 LLM 的单元测试必须 mock 掉 `LLMProvider`，禁止跑真 API（除非显式放在 `tests/e2e_with_real_llm/`）。

@@ -1,0 +1,40 @@
+# ============ Python ============
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+build/
+dist/
+*.log
+logs/
+
+# ============ Node / Vite ============
+node_modules/
+.vite/
+dist/
+.npm/
+.pnpm-store/
+.eslintcache
+
+# ============ Env / secrets ============
+.env
+.env.*.local
+*.env
+!.env.example
+!.env.development
+!.env.production
+
+# ============ IDE / OS ============
+.DS_Store
+Thumbs.db
+*.swp
+
+# ============ Project specific ============
+server/result/
