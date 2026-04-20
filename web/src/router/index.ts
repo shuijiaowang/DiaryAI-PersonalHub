@@ -11,6 +11,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: '/dashboard' },
       { path: 'dashboard', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
+      { path: 'stats/expense', name: 'stats-expense', component: () => import('@/views/ExpenseStatsView.vue') },
       { path: 'diary', name: 'diary', component: () => import('@/views/DiaryView.vue') },
       { path: 'diary/:id', name: 'diary-detail', component: () => import('@/views/DiaryDetailView.vue'), props: true },
       { path: 'modules/:code', name: 'module', component: () => import('@/views/ModuleView.vue'), props: true },

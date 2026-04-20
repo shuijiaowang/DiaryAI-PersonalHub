@@ -1,3 +1,4 @@
+from datetime import date as date_type
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -11,6 +12,16 @@ class EventCreate(BaseModel):
     raw_text: str
     ai_processed_text: str | None = None
     data: dict[str, Any] = Field(default_factory=dict)
+
+
+class EventManualCreate(BaseModel):
+    """User-authored event not derived from diary parsing (ADR-007)."""
+
+    module_code: str
+    data: dict[str, Any] = Field(default_factory=dict)
+    date: date_type | None = Field(default=None, description="归属日期；默认为今天")
+    raw_text: str | None = None
+    ai_processed_text: str | None = None
 
 
 class EventUpdate(BaseModel):

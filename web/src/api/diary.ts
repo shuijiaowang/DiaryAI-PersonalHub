@@ -13,9 +13,19 @@ export const diaryApi = {
     postJSON<Message>(`/api/v1/diaries/${id}/parse`, { force }),
 }
 
+export interface EventManualCreate {
+  module_code: string
+  data: Record<string, unknown>
+  date?: string | null
+  raw_text?: string | null
+  ai_processed_text?: string | null
+}
+
 export const eventApi = {
   listByModule: (module_code: string, limit = 100, offset = 0) =>
     getJSON<EventOut[]>('/api/v1/events', { module_code, limit, offset }),
+  createManual: (payload: EventManualCreate) =>
+    postJSON<EventOut>('/api/v1/events', payload),
   update: (id: number, payload: EventUpdate) =>
     patchJSON<EventOut>(`/api/v1/events/${id}`, payload),
   remove: (id: number) => deleteJSON<Message>(`/api/v1/events/${id}`),

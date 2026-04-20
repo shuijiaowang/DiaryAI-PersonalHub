@@ -4,7 +4,6 @@ import {
   NLayoutHeader,
   NLayoutSider,
   NMenu,
-  NIcon,
   NButton,
   NSpace,
   type MenuOption,
@@ -26,6 +25,13 @@ const menuOptions = computed<MenuOption[]>(() => [
   { label: renderLink('dashboard', '总览'), key: 'dashboard' },
   { label: renderLink('diary', '日记'), key: 'diary' },
   { label: renderLink('profile', '我的画像'), key: 'profile' },
+  {
+    label: '统计',
+    key: 'stats-group',
+    children: [
+      { label: renderLink('stats-expense', '消费统计'), key: 'stats-expense' },
+    ],
+  },
   {
     label: '模块明细',
     key: 'modules-group',
