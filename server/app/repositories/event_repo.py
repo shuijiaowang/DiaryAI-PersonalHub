@@ -10,6 +10,10 @@ class EventRepository(BaseRepository[Event]):
     def list_by_diary(self, diary_id: int) -> list[Event]:
         return list(self.db.scalars(select(Event).where(Event.diary_id == diary_id)))
 
+    def list_locked_by_diary(self, diary_id: int) -> list[Event]:
+        stmt = select(Event).where(Event.diary_id == diary_id, Event.locked.is_(True))
+        return list(self.db.scalars(stmt))
+
     def list_by_user_and_module(
         self, user_id: int, module_code: str, *, limit: int = 100, offset: int = 0
     ) -> list[Event]:

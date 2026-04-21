@@ -18,7 +18,7 @@ def create_manual_event(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Event:
-    """手动补录一条事件（不修改日记原文，自动 locked=true）。见 ADR-007。"""
+    """手动补录一条事件（自动 locked=true，并写入日记末尾修改记录）。"""
     return EventService(db).create_manual(user.id, payload)
 
 

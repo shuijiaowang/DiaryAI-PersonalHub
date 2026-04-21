@@ -24,6 +24,7 @@ from app.models.ai_call_log import AICallStatus
 from app.modules.registry import get_module
 from app.repositories.module_repo import ModuleRepository
 from app.schemas.ai import DiaryParseResult
+from app.services.diary_revision_log import split_raw_text_and_revision_log
 from app.services.profile_service import ProfileService
 
 MAX_RETRIES = 3
@@ -35,7 +36,8 @@ class DiaryParserPipeline:
         self.provider = get_provider()
 
     def run(self, *, user_id: int, diary_id: int, diary_raw_text: str) -> DiaryParseResult:
-        prompt = self._build_prompt(user_id=user_id, diary_raw_text=diary_raw_text)
+        source_text, _ = split_raw_text_and_revision_log(diary_raw_text)
+        prompt = self._build_prompt(user_id=user_id, diary_raw_text=source_text)
         prompt_hash = cache.hash_prompt(self.provider.name, settings.LLM_MODEL, prompt)
 
         cached = cache.get(prompt_hash)

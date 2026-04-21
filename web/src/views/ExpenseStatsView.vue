@@ -370,7 +370,7 @@ async function submitManual() {
       },
     }
     await eventApi.createManual(payload)
-    message.success('已手动补录（不会修改日记原文）')
+    message.success('已手动补录（会在日记末尾追加修改记录）')
     showManualModal.value = false
     await loadAll()
   } catch (e) {
@@ -509,7 +509,7 @@ async function submitManual() {
         </NFormItem>
       </NForm>
       <p style="color: #999; font-size: 12px; margin: 0 0 12px">
-        手动补录不会修改日记原文（ADR-007）。这条记录会打上"已锁定"标记，AI 重解析时不会被覆盖或删除。
+        手动补录会在日记原文末尾追加一条“系统修改记录”（ADR-009）。该记录会打上“已锁定”标记，AI 重解析时不会被覆盖，并且追加记录本身不会被重复解析。
       </p>
       <NSpace justify="end">
         <NButton @click="showManualModal = false" :disabled="manualSubmitting">取消</NButton>

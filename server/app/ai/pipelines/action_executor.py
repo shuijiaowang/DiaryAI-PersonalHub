@@ -7,6 +7,8 @@ Contract:
 """
 from __future__ import annotations
 
+import json
+
 from sqlalchemy.orm import Session
 
 from app.core.errors import AIError
@@ -38,13 +40,17 @@ class ActionExecutor:
     def _apply_inner(self, diary: Diary, result: DiaryParseResult) -> None:
         # 1. Update diary's processed text + clear unlocked events for re-parse.
         diary.ai_processed_text = result.ai_processed_text or diary.ai_processed_text
+        locked_signatures = {
+            self._event_signature(ev.module_code, ev.data)
+            for ev in self.events.list_locked_by_diary(diary.id)
+        }
         deleted = self.events.delete_unlocked_by_diary(diary.id)
         if deleted:
             logger.info(f"[executor] cleared {deleted} unlocked events of diary={diary.id}")
 
         # 2. Create events.
         for ev in result.events:
-            self._insert_event(diary, ev)
+            self._insert_event(diary, ev, locked_signatures)
 
         # 3. Apply actions (memo etc.).
         for act in result.actions:
@@ -53,11 +59,20 @@ class ActionExecutor:
         diary.status = DiaryStatus.parsed
         diary.parse_error = None
 
-    def _insert_event(self, diary: Diary, ev: ParsedEvent) -> None:
+    def _insert_event(
+        self, diary: Diary, ev: ParsedEvent, locked_signatures: set[tuple[str, str]]
+    ) -> None:
         mod = get_module(ev.module_code)
         if mod is None:
             raise AIError(f"unknown module_code from LLM: {ev.module_code!r}")
         validated = mod.validate(ev.data)  # raises if invalid
+        signature = self._event_signature(ev.module_code, validated)
+        if signature in locked_signatures:
+            logger.info(
+                f"[executor] skip duplicate parsed event matched locked event: "
+                f"diary={diary.id} module={ev.module_code}"
+            )
+            return
         row = Event(
             diary_id=diary.id,
             user_id=diary.user_id,
@@ -93,3 +108,7 @@ class ActionExecutor:
             raise
         self.db.add(log)
         self.db.flush()
+
+    @staticmethod
+    def _event_signature(module_code: str, data: dict) -> tuple[str, str]:
+        return module_code, json.dumps(data, ensure_ascii=False, sort_keys=True)
