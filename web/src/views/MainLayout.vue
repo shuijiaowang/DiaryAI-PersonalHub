@@ -8,8 +8,8 @@ import {
   NSpace,
   type MenuOption,
 } from 'naive-ui'
-import { computed, h } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useUserStore } from '@/stores/user'
 
@@ -17,36 +17,56 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-function renderLink(name: string, label: string) {
-  return () => h(RouterLink, { to: { name } }, { default: () => label })
-}
-
 const menuOptions = computed<MenuOption[]>(() => [
-  { label: renderLink('dashboard', '总览'), key: 'dashboard' },
-  { label: renderLink('diary', '日记'), key: 'diary' },
-  { label: renderLink('profile', '我的画像'), key: 'profile' },
+  { label: '总览', key: 'dashboard' },
+  { label: '日记', key: 'diary' },
+  { label: '我的画像', key: 'profile' },
   {
     label: '统计',
     key: 'stats-group',
     children: [
-      { label: renderLink('stats-expense', '消费统计'), key: 'stats-expense' },
+      { label: '消费统计', key: 'stats-expense' },
     ],
   },
   {
     label: '模块明细',
     key: 'modules-group',
     children: [
-      { label: renderLink('module', '消费'), key: 'module-expense', props: { onClick: () => router.push({ name: 'module', params: { code: 'expense' } }) } },
-      { label: renderLink('module', '饮食'), key: 'module-meal', props: { onClick: () => router.push({ name: 'module', params: { code: 'meal' } }) } },
-      { label: renderLink('module', '天气'), key: 'module-weather', props: { onClick: () => router.push({ name: 'module', params: { code: 'weather' } }) } },
-      { label: renderLink('module', '备忘录'), key: 'module-memo', props: { onClick: () => router.push({ name: 'module', params: { code: 'memo' } }) } },
+      { label: '消费', key: 'module-expense' },
+      { label: '饮食', key: 'module-meal' },
+      { label: '天气', key: 'module-weather' },
+      { label: '备忘录', key: 'module-memo' },
     ],
   },
-  { label: renderLink('chat', '对话'), key: 'chat' },
-  { label: renderLink('settings', '设置'), key: 'settings' },
+  { label: '对话', key: 'chat' },
+  { label: '设置', key: 'settings' },
 ])
 
-const activeKey = computed(() => (route.name as string) || 'dashboard')
+const activeKey = computed(() => {
+  if (route.name === 'module') {
+    return `module-${String(route.params.code || '')}`
+  }
+  return (route.name as string) || 'dashboard'
+})
+
+const menuRouteMap: Record<string, { name: string, params?: Record<string, string> }> = {
+  dashboard: { name: 'dashboard' },
+  diary: { name: 'diary' },
+  profile: { name: 'profile' },
+  'stats-expense': { name: 'stats-expense' },
+  'module-expense': { name: 'module', params: { code: 'expense' } },
+  'module-meal': { name: 'module', params: { code: 'meal' } },
+  'module-weather': { name: 'module', params: { code: 'weather' } },
+  'module-memo': { name: 'module', params: { code: 'memo' } },
+  chat: { name: 'chat' },
+  settings: { name: 'settings' },
+}
+
+function handleMenuSelect(key: string) {
+  const target = menuRouteMap[key]
+  if (!target) return
+  router.push(target)
+}
 
 function logout() {
   userStore.logout()
@@ -58,7 +78,7 @@ function logout() {
   <NLayout has-sider style="height: 100vh">
     <NLayoutSider bordered collapse-mode="width" :collapsed-width="64" :width="220" show-trigger>
       <div style="padding: 18px; font-weight: 600; font-size: 15px">DiaryAI</div>
-      <NMenu :options="menuOptions" :value="activeKey" />
+      <NMenu :options="menuOptions" :value="activeKey" @update:value="handleMenuSelect" />
     </NLayoutSider>
     <NLayout>
       <NLayoutHeader bordered style="padding: 12px 20px; display: flex; align-items: center; justify-content: space-between">
